@@ -1,0 +1,272 @@
+---
+title: Προγραμματιστική Εργασία
+subtitle: |
+    | Πανεπιστήμιο Δυτικής Αττικής
+    | Τμήμα Μηχανικών Πληροφορικής και Υπολογιστών
+    | Θεωρία Υπολογισμού
+author: Ευάγγελος Κατσανδρής (cs171014@uniwa.gr)
+date: "`r Sys.setlocale('LC_TIME', 'el_GR.utf8'); format(Sys.time(), '%d %B, %Y')`"
+output: 
+    pdf_document:
+        template: eisvogel
+        latex_engine: xelatex
+        number_sections: true
+        toc: true
+        pandoc_args: ["--highlight-style", "breezedark"]
+lang: "el"
+mainfont: 'Liberation Serif'
+sansfont: 'Liberation Sans'
+#mathfont: 'DejaVu Math TeX Gyre'
+monofont: 'Source Code Pro'
+fontsize: 11pt
+geometry: "margin=2.5cm"
+code-block-font-size: \small
+titlepage: true
+titlepage-rule-color: "123c64"
+logo: img/logo.jpg
+logo-width: 200
+caption-justification: centering
+toc-own-page: true
+header-includes:
+    \newfontfamily\greekfont{LiberationSerif}
+    \newfontfamily\greekfontsf{LiberationSerif}
+    \newfontfamily\greekfonttt{LiberationMono}
+    \usepackage{float}
+    \usepackage{subcaption}
+    \usepackage{pgf}
+    \usepackage{tikz}
+    \usepackage{tikzscale}
+    \usepackage{pgfplots}
+    \usepackage{chngcntr}
+    \counterwithin{figure}{section}
+    \pgfplotsset{compat=1.17}
+    \usepackage{svg}
+    \usepackage{multicol}
+    \usepackage{hyperref}
+---
+
+\newcommand{\cimg}[4][scale=1.0]{
+\begin{figure}[H]
+    \begin{center}
+        \includegraphics[#1]{#2}
+        \caption{#3}
+    \end{center}
+\end{figure}}
+
+\newcommand*\subtxt[1]{{\textnormal{#1}}}
+
+\listoffigures
+
+# Εισαγωγή
+
+Η γλώσσα που επιλέχθηκε για την υλοποίηση ήταν η python.
+Αρχικά έγινε μια απόπειρα το υλοποίησης σε R αλλά μια σειρά γεγονότων \footnote{χρήση αντικειμένου για την αναπαράσταση ενός αυτόματου -> S3 classes -> ??? -> bad code} οδήγησε σε πολύ άσχημο κώδικα. Σίγουρα ήταν δυνατό να γίνει όμορφα (ίσως με μια συναρτησιακή προσέγγιση ή μια όχι αντικειμενοστραφής προσέγγιση), αλλά η python ήταν η εύκολη λύση.
+
+Παρηγοριά ίσως να βρεθεί στο γεγονός ότι το παρόν έγγραφο είναι γραμμένο σε Rmarkdown :).
+
+# Υλοποίηση
+
+Η βασική ιδέα είναι αυτή που είδαμε στην θεωρία. Ποιο συγκεκριμένα, δημιουργία
+του δυναμοσυνόλου των καταστάσεων του μη-ντετερμινιστικού αυτομάτου (ΜΠΑ), υπολογισμός μεταβάσεων και αφαίρεσης μη προσβάσιμων καταστάσεων για να φτάσουμε στο ντετερμινιστικό αυτόματο (ΝΠΑ).
+
+Τώρα θα δούμε τα σημαντικότερα κομμάτια κώδικα από κοντά με μικρές παραλείψεις (όπως κάποια σχόλια μέσα στον κώδικα) για καλύτερη αναγνωσιμότητα.
+Για περισσότερες λεπτομέρειες και σχόλια ανατρέξτε στο αρχείο του πηγαίο κώδικα.
+
+## Αντικείμενα
+
+### State
+
+Όπως φαίνεται και στον κώδικα μια κατάσταση αναπαριστάτε από μια συμβολοσειρά 
+
+```python
+class State(str):
+    """Represents a state.
+
+    It's just a string with 2 special constructors
+    and a helpful constant: null
+    """
+
+    null = "∅"
+
+    @staticmethod
+    def from_number(n):
+        """Create a State from anything that can be converted to an integer.
+
+        Must be non-negative
+
+        Examples:
+        >>> State.fromNumber(5)
+        >>> 'q1'
+        >>> State.fromNumber('12')
+        >>> 'q12'
+        """
+        try:
+            if (num := int(n)) >= 0:
+                return f"q{num}"
+        except ValueError:
+            raise TypeError("Number given must be convertible to int.")
+
+    @staticmethod
+    def from_set(state_set):
+        """Create a state from a set of states.
+
+        Examples:
+        >>> State.from_set('q1','q2')
+        >>> 'q1q2'
+        >>> State.from_set('q0','q3','q5')
+        >>> 'q0q3q5'
+        """
+        return "".join(state_set)
+```
+
+### FiniteStateAuto
+
+constructors + saving to file, mention dot + normalize_state_names
+
+
+## main ()
+
+Εδώ βλέπουμε υψηλού επιπέδου εικόνα του προγράμματος, πολύ απλά κατασκευάζει μερικά μη-ντετερμινιστικά αυτόματα
+από αρχεία, τα μετατρέπει σε ντετερμινιστικά και τα γράφει σε αρχεία. 
+
+```python
+def main():
+    Nfa = FiniteStateAuto.from_file("./Nfa.txt")
+    Nfa.save_to_dot("Nfa.gv")
+
+    Dfa = translate_to_deterministic(Nfa)
+    Dfa.save_to_dot("Dfa.gv")
+    Dfa.save_to_file("Dfa.txt")
+
+    Nfa2 = FiniteStateAuto.from_file("./Nfa2.txt")
+    Nfa2.save_to_dot("Nfa2.gv")
+
+    Dfa2 = translate_to_deterministic(Nfa2)
+    Dfa2.save_to_dot("Dfa2.gv")
+    Dfa2.normalize_state_names()
+    Dfa2.save_to_file("Dfa2.txt")
+
+    Nfa3 = FiniteStateAuto.from_file("./Nfa3.txt")
+    Nfa2.save_to_dot("Nfa3.gv")
+
+    Dfa3 = translate_to_deterministic(Nfa3)
+    Dfa3.normalize_state_names()
+    Dfa3.save_to_dot("Dfa3.gv")
+    Dfa3.save_to_file("Dfa3.txt")
+```
+
+## Ντετερμινισμός 
+
+Εδώ βλέπουμε την συνάρτηση που κάνει την μετατροπή από ΜΠΑ σε ΝΠΑ.
+
+Αρχικά δημιουργεί ένα άδειο αντικείμενο αυτομάτου και αντιγράφει τις ιδιότητες που θα μείνουν ίδιες,
+την αλφάβητο και την αρχική κατάσταση του αυτομάτου.
+
+```python
+def translate_to_deterministic(Nfa):
+    # Deterministic finite (state) automation
+    Dfa = FiniteStateAuto.empty()
+
+    # copy attributes that stay the same
+    Dfa.start_state = Nfa.start_state
+    Dfa.alphabet = Nfa.alphabet
+```
+
+Για κάθε κατάσταση στο δυναμοσύνολο των καταστάσεων του ΜΠΑ δημιουργεί μια κατάσταση
+του ΝΠΑ όπως και καταγράφει τις τελικές καταστάσεις του ΝΠΑ.
+Αυτό γίνεται ελέγχοντας αν μια από τις καταστάσεις του ΜΠΑ που χρησιμοποιήθηκε
+για να φτιάξει μια κατάσταση του ΝΠΑ ανήκει στις τελικές καταστάσεις του ΜΠΑ.
+
+```python
+for state in powerset(Nfa.states):
+    # at this point Dfa's states are sets of Nda's states so for each
+    # Nda state(SUBSTATE) that's in a Dfa state, if the SUBSTATE is
+    # an end_state of the Nda then the state is an end state of the Dfa
+    if state:  # check for null state
+        Dfa.states.append(State.from_set(state))
+    else:
+        Dfa.states.append(State.null)
+    for substate in state:
+        if substate in Nfa.end_states:
+            Dfa.end_states.append(State.from_set(state))
+            break
+```
+
+Ύστερα για κάθε συνδυασμό κατάστασης και συμβόλου της αλφάβητου του ΝΠΑ καταγράφει
+το σύνολο των καταστάσεων στις οποίες μπορεί να μεταβεί μια κατάσταση με ένα σύμβολο.
+Επειδή το σύνολο αναπαριστάτε από λίστα πρέπει να φιλτράρει τυχών διπλότυπες καταστάσεις, μετά
+ταξινομεί λεξικογραφικά την λίστα για να έχει σταθερά ονόματα καταστάσεων συνόλων (δείτε κώδικα).
+Έτσι μπορεί να κατασκευάσει μια μετάβαση μεταξύ της κατάστασης και ενός συνόλου καταστάσεων για ένα σύμβολο.
+Σε περίπτωση που το σύνολο είναι άδειο τότε κατασκευάζει μετάβαση προς στην κατάσταση null.
+Επιπλέον γίνονται ειδικοί έλεγχοι για την περίπτωση των μεταβάσεων από την κατάσταση null, που είναι
+πάντα προς τον εαυτό της.
+
+```python
+# get transitions for every combination of symbol and state
+for state, symbol in product(Dfa.states, Dfa.alphabet):
+    d_set = list()  # destination states that state can reach with symbol
+    for trans in Nfa.transitions:
+        if trans[0] in state and trans[1] == symbol:
+            d_set.append(trans[2])
+    if d_set:  # if d_set contains states
+        d_set = list(set(d_set))  # filter duplicates
+        d_set.sort()  # 'q0q2q1' -> 'q0q1q2'
+        Dfa.transitions.append([state, symbol, State.from_set(d_set)])
+    else:  # if state does not transition to any state, it transitions to null
+        if state:
+            Dfa.transitions.append([state, symbol, State.null])
+        else:  # self loop from null to null
+            Dfa.transitions.append([State.null, symbol, State.null])
+```
+
+Μετά με την χρήση της αναδρομικής συνάρτησης walk() καταγράφει τις προσβάσιμες καταστάσεις σε ένα
+σύνολο walked. Χρησιμοποιώντας το σύνολο αυτό αφαιρεί κάθε αναφορά σε μη προσβάσιμη κατάσταση από τις
+ιδιότητες του ΝΠΑ. Μετράει των αριθμό των καταστάσεων του τελικού ΝΠΑ και το επιστρέφει.
+
+```python
+walked = set()
+
+def walk(state):
+    """Recursively walk graph to find reachable states.
+
+    Defined in a closure with a FiniteStateAuto named "Dfa"
+    and a set named "walked"
+    """
+    if state in walked:  # if state has been reached before, return
+        return
+    for trans in Dfa.transitions:
+        if trans[0] == state:  # walk the transitions that start from state
+            walked.add(state)
+            walk(trans[2])  # walk to the transition destination
+
+walk(Dfa.start_state)  # walk from the start
+
+# only keep reachable states
+Dfa.states = walked
+
+# count em
+Dfa.state_count = len(Dfa.states)
+
+# remove transitions that reference unreachable states
+for transition in list(Dfa.transitions):  # explicitly make a copy to iterate over
+    if transition[0] not in Dfa.states or transition[2] not in Dfa.states:
+        Dfa.transitions.remove(transition)
+
+# remove end states that don't exist anymore
+for end_state in list(Dfa.end_states):
+    if end_state not in Dfa.states:
+        Dfa.end_states.remove(end_state)
+
+return Dfa
+```
+
+# Αποτελέσματα
+
+\begin{figure}[H]
+    \begin{center}
+        \includegraphics[width=1\linewidth]{"./Nfa.pdf"}
+        \caption{Μη ντετερμινιστικό αυτόματο εκφώνησης}
+    \end{center}
+\end{figure}
+
+
