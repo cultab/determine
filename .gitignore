@@ -1,0 +1,15 @@
+*.pdf
+*.gv
+*.png
+*.tex
+*.log
+*.ps2
+*.cpp
+*.R
+img/*
+*.pgf
+*.aux
+old_graph_set.py
+render.py
+saveit.py
+trial
