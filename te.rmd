@@ -13,7 +13,6 @@ output:
         highlight: haddock
         latex_engine: lualatex
         number_sections: true
-        toc: true
 lang: "el"
 mainfont: 'Liberation Serif'
 sansfont: 'Liberation Sans' # yes I know..
@@ -28,7 +27,6 @@ titlepage-rule-height: 10
 #logo: img/logo.jpg
 #logo-width: 300
 caption-justification: centering
-toc-own-page: false
 header-includes:
     \newfontfamily\greekfont{LiberationSerif}
     \newfontfamily\greekfontsf{LiberationSerif}
@@ -49,13 +47,14 @@ header-includes:
     \usepackage{svg}
     \usepackage{multicol}
     \usepackage{xcolor}
+    \definecolor{uniwalightblue}{RGB}{103, 173, 224}
     \definecolor{uniwablue}{RGB}{18, 60, 100}
-    \definecolor{myorange}{RGB}{215, 142, 40}
+    \definecolor{uniwaorange}{RGB}{230, 124, 23}
     \usepackage{hyperref}
     \hypersetup{
         linkcolor  = black,
-        citecolor  = black,
-        urlcolor   = blue,
+        citecolor  = uniwalightblue,
+        urlcolor   = uniwablue,
         colorlinks = true,
     }
     \urlstyle{same}
@@ -74,7 +73,14 @@ header-includes:
 
 \newcommand\autonameref[1]{\autoref{#1}, {\nameref{#1}}}
 
+```{=tex}
+{
+\hypersetup{linkcolor=black}
+\tableofcontents
+
 \listoffigures
+}
+```
 
 \newpage
 
@@ -85,7 +91,7 @@ header-includes:
 
 Παρηγοριά ίσως να βρεθεί στο γεγονός ότι το παρόν έγγραφο είναι γραμμένο σε Rmarkdown :).
 
-Θα γίνει αναφορά σε 3 είδη αρχείων, τα αρχεία εισόδου από τα οποία διαβάζεται ένα μη-ντετερμινιστικό αυτόματο (ΜΠΑ), τα αρχεία εξόδου τα οποία είναι τα αρχεία που περιγράφουν τα ντετερμινιστικά αυτόματα (ΝΠΑ) όπως ζητήθηκε και τέλος τα αρχεία εξόδου dot τα οποία περιγράφουν τα αυτόματα σαν γράφους που μπορούν να χρησιμοποιηθούν για την δημιουργία εικόνων όπως θα δείτε στην \autonameref{section:results}
+Θα γίνει αναφορά σε 3 είδη αρχείων, τα αρχεία εισόδου από τα οποία διαβάζεται ένα μη-ντετερμινιστικό αυτόματο (ΜΠΑ), τα αρχεία εξόδου τα οποία είναι τα αρχεία που περιγράφουν τα ντετερμινιστικά αυτόματα (ΝΠΑ) όπως ζητήθηκε και τέλος τα αρχεία εξόδου dot τα οποία περιγράφουν τα αυτόματα σαν γράφους που μπορούν να χρησιμοποιηθούν για την δημιουργία εικόνων όπως θα δείτε στην \autonameref{section:results}.
 
 # Υλοποίηση
 
@@ -364,7 +370,7 @@ def save_to_dot(self, filename):
 ```
 
 
-## Ντετερμινισμός
+## Ντετερμινισμός Αυτομάτων
 
 Η επόμενη συνάρτηση κάνει την μετατροπή από ΜΠΑ σε ΝΠΑ.
 
@@ -469,7 +475,7 @@ for end_state in list(Dfa.end_states):
 return Dfa
 ```
 
-## main ()
+## Κύρια Συνάρτηση main()
 
 Εδώ θα δείτε μια υψηλού επιπέδου εικόνα του προγράμματος. Πολύ απλά κατασκευάζει μερικά μη-ντετερμινιστικά αυτόματα
 από αρχεία, τα μετατρέπει σε ντετερμινιστικά και τα γράφει σε αρχεία. 
@@ -481,26 +487,26 @@ return Dfa
 
 ```python
 def main():
-    Nfa = FiniteStateAuto.from_file("./Nfa.txt")
-    Nfa.save_to_dot("Nfa.gv")
+    Nfa = FiniteStateAuto.from_file("./Nfa.txt")  # load example file
+    Nfa.save_to_dot("Nfa.gv")  # export for rendering
 
-    Dfa = translate_to_deterministic(Nfa)
-    Dfa.save_to_dot("Dfa.gv")
-    Dfa.save_to_file("Dfa.txt")
+    Dfa = translate_to_deterministic(Nfa)  # determine
+    Dfa.save_to_dot("Dfa.gv")  # export for rendering
+    Dfa.save_to_file("Dfa.txt")  # save to file
 
     Nfa2 = FiniteStateAuto.from_file("./Nfa2.txt")
     Nfa2.save_to_dot("Nfa2.gv")
 
     Dfa2 = translate_to_deterministic(Nfa2)
-    Dfa2.save_to_dot("Dfa2.gv")
+    Dfa2.save_to_dot("Dfa2.gv")  # export with names as is
     Dfa2.normalize_state_names()
-    Dfa2.save_to_file("Dfa2.txt")
+    Dfa2.save_to_file("Dfa2.txt")  # save after normalizing
 
     Nfa3 = FiniteStateAuto.from_file("./Nfa3.txt")
     Nfa3.save_to_dot("Nfa3.gv")
 
     Dfa3 = translate_to_deterministic(Nfa3)
-    Dfa3.normalize_state_names()
+    Dfa3.normalize_state_names()  # save and export after normalizing
     Dfa3.save_to_dot("Dfa3.gv")
     Dfa3.save_to_file("Dfa3.txt")
 
@@ -510,7 +516,7 @@ def main():
 
     Dfa4 = translate_to_deterministic(Nfa4)
     Dfa4.save_to_dot("Dfa4.gv")
-    Dfa4.normalize_state_names()  # export after normalizing
+    Dfa4.normalize_state_names()  # save after normalizing
     Dfa4.save_to_file("Dfa4.txt")
 ```
 
@@ -557,9 +563,7 @@ def main():
 
 \newpage
 
-Τέλος θα δείτε την μετατροπή του δεύτερου μη-ντετερμινιστικού αυτόματου που είδαμε στην διάλεξη 4.5 ^[Χρόνος: 3:30 https://youtu.be/juaVVTI-QzY?t=210]. Σε αντίθεση με το προηγούμενο προσέξτε ότι με την χρήση της normalize_state_names() έχουν μετονομαστεί οι καταστάσεις και το αρχείο εξόδου περιέχει εγγραφές που μοιάζουν με αυτές του αρχείου εισόδου.
-
-<!-- TODO: rethink this -->
+Τέλος θα δείτε την μετατροπή του δεύτερου μη-ντετερμινιστικού αυτόματου που είδαμε στην διάλεξη 4.5 ^[Χρόνος: 3:30 https://youtu.be/juaVVTI-QzY?t=210]. Σε αντίθεση με το προηγούμενο προσέξτε ότι με την χρήση της normalize_state_names() έχουν μετονομαστεί οι καταστάσεις και οι εγγραφές του αρχείου εξόδου είναι θεμιτές.
 
 \begin{figure}[H]
     \begin{center}
@@ -581,7 +585,7 @@ def main():
 
 \label{section:specs}
 
-Τα ονόματα των καταστάσεων πρέπει να είναι διαδοχικοί φυσικοί αριθμοί ξεκινώντας από το 0.
+Τα ονόματα των καταστάσεων σε ένα αρχείο εισόδου πρέπει να είναι διαδοχικοί φυσικοί αριθμοί ξεκινώντας από το 0.
 
 Το αρχείο εξόδου μπορεί να περιέχει εγγραφές με ονόματα καταστάσεων που μπορούν να ερμηνευτούν λάθος εάν έχουμε περισσότερες από 10 καταστάσεις. Για παράδειγμα η κατάσταση 'q1q2' και η 'q12', και οι δυο θα γραφτούν ως 12.
 
@@ -590,9 +594,9 @@ def main():
 
 Τελικά το πρόγραμμα μπορεί να χειριστεί αρχεία εισόδου με
 αυτόματα με $m > 10$ αλφαριθμητικά σύμβολα (χωρίς κενά) της αλφάβητου και αριθμό καταστάσεων $n > 10$.
-Αυτό με την χρήση της normalize_state_names() καταστάσεις περισσότερες από 10 πριν την εγγραφή σε αρχείο εξόδου.
+Με την χρήση βέβαια normalize_state_names() για περισσότερες από 10 καταστάσεις πριν την εγγραφή σε αρχείο εξόδου.
 
-Απόδειξη (σε πολλά εισαγωγικά) για τον επιτυχές (με ακόμα περισσότερα εισαγωγικά) χειρισμό για $n > 10$ και $m > 10$ μπορείτε να βρείτε στα αρχεία παρακάτω αρχεία.
+Απόδειξη (σε πολλά εισαγωγικά) για τον επιτυχές (σε ακόμα περισσότερα εισαγωγικά) χειρισμό για $n > 10$ και $m > 10$ μπορείτε να βρείτε στα αρχεία παρακάτω αρχεία.
 Τα .pdf παρέχονται ώστε να μην χρειαστεί η χρήση του dot για την δημιουργία τους.
 
 * Nfa4.txt αρχείο εισόδου
