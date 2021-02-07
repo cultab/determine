@@ -1,0 +1,21 @@
+11
+0 1 a b c d funny_symbol_name 8 9 10 2021 αΥτΑ_εΊνAι_ΜόΝο_ΔέKα
+0
+8 11
+0 a 1
+0 a 0
+1 funny_symbol_name 6
+1 funny_symbol_name 8
+2 αΥτΑ_εΊνAι_ΜόΝο_ΔέKα 4
+2 αΥτΑ_εΊνAι_ΜόΝο_ΔέKα 9
+4 αΥτΑ_εΊνAι_ΜόΝο_ΔέKα 2
+0 funny_symbol_name 5
+5 d 6
+5 d 7
+6 8 7
+7 0 8
+8 b 9
+8 b 2
+9 10 11
+11 d 0
+4 c 8

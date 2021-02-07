@@ -1,21 +1,22 @@
 ---
-title: Προγραμματιστική Εργασία
+title: Μετατροπή Μη-Ντερμινιστικών Αυτομάτων σε Ντετερμινιστικά
 subtitle: |
     | Πανεπιστήμιο Δυτικής Αττικής
     | Τμήμα Μηχανικών Πληροφορικής και Υπολογιστών
     | Θεωρία Υπολογισμού
+    | \includegraphics{./img/logo.jpg}
 author: Ευάγγελος Κατσανδρής (cs171014@uniwa.gr)
 date: "`r Sys.setlocale('LC_TIME', 'el_GR.utf8'); format(Sys.time(), '%d %B, %Y')`"
 output: 
     pdf_document:
         template: eisvogel
-        latex_engine: xelatex
+        highlight: haddock
+        latex_engine: lualatex
         number_sections: true
         toc: true
-        pandoc_args: ["--highlight-style", "breezedark"]
 lang: "el"
 mainfont: 'Liberation Serif'
-sansfont: 'Liberation Sans'
+sansfont: 'Liberation Sans' # yes I know..
 #mathfont: 'DejaVu Math TeX Gyre'
 monofont: 'Source Code Pro'
 fontsize: 11pt
@@ -23,14 +24,19 @@ geometry: "margin=2.5cm"
 code-block-font-size: \small
 titlepage: true
 titlepage-rule-color: "123c64"
-logo: img/logo.jpg
-logo-width: 200
+titlepage-rule-height: 10
+#logo: img/logo.jpg
+#logo-width: 300
 caption-justification: centering
-toc-own-page: true
+toc-own-page: false
 header-includes:
     \newfontfamily\greekfont{LiberationSerif}
     \newfontfamily\greekfontsf{LiberationSerif}
     \newfontfamily\greekfonttt{LiberationMono}
+    \usepackage{newunicodechar}
+    \DeclareTextFontCommand{\textfallback}{\fallbackfont}
+    \newfontfamily{\fallbackfont}{DejaVu Sans}[Scale=MatchLowercase]
+    \newunicodechar{∅}{\textfallback{∅}}
     \usepackage{float}
     \usepackage{subcaption}
     \usepackage{pgf}
@@ -42,8 +48,19 @@ header-includes:
     \pgfplotsset{compat=1.17}
     \usepackage{svg}
     \usepackage{multicol}
+    \usepackage{xcolor}
+    \definecolor{uniwablue}{RGB}{18, 60, 100}
+    \definecolor{myorange}{RGB}{215, 142, 40}
     \usepackage{hyperref}
+    \hypersetup{
+        linkcolor  = black,
+        citecolor  = black,
+        urlcolor   = blue,
+        colorlinks = true,
+    }
+    \urlstyle{same}
 ---
+
 
 \newcommand{\cimg}[4][scale=1.0]{
 \begin{figure}[H]
@@ -55,28 +72,36 @@ header-includes:
 
 \newcommand*\subtxt[1]{{\textnormal{#1}}}
 
+\newcommand\autonameref[1]{\autoref{#1}, {\nameref{#1}}}
+
 \listoffigures
+
+\newpage
 
 # Εισαγωγή
 
 Η γλώσσα που επιλέχθηκε για την υλοποίηση ήταν η python.
-Αρχικά έγινε μια απόπειρα το υλοποίησης σε R αλλά μια σειρά γεγονότων \footnote{χρήση αντικειμένου για την αναπαράσταση ενός αυτόματου -> S3 classes -> ??? -> bad code} οδήγησε σε πολύ άσχημο κώδικα. Σίγουρα ήταν δυνατό να γίνει όμορφα (ίσως με μια συναρτησιακή προσέγγιση ή μια όχι αντικειμενοστραφής προσέγγιση), αλλά η python ήταν η εύκολη λύση.
+Αρχικά έγινε μια απόπειρα υλοποίησης σε R αλλά μια σειρά γεγονότων ^[χρήση αντικειμένου για την αναπαράσταση ενός αυτόματου -> S3 classes -> ??? -> bad code] οδήγησε σε πολύ άσχημο κώδικα. Σίγουρα ήταν δυνατό να γίνει όμορφα (ίσως με μια συναρτησιακή προσέγγιση ή μια όχι αντικειμενοστραφής προσέγγιση), αλλά η python ήταν η εύκολη λύση.
 
 Παρηγοριά ίσως να βρεθεί στο γεγονός ότι το παρόν έγγραφο είναι γραμμένο σε Rmarkdown :).
+
+Θα γίνει αναφορά σε 3 είδη αρχείων, τα αρχεία εισόδου από τα οποία διαβάζεται ένα μη-ντετερμινιστικό αυτόματο (ΜΠΑ), τα αρχεία εξόδου τα οποία είναι τα αρχεία που περιγράφουν τα ντετερμινιστικά αυτόματα (ΝΠΑ) όπως ζητήθηκε και τέλος τα αρχεία εξόδου dot τα οποία περιγράφουν τα αυτόματα σαν γράφους που μπορούν να χρησιμοποιηθούν για την δημιουργία εικόνων όπως θα δείτε στην \autonameref{section:results}
 
 # Υλοποίηση
 
 Η βασική ιδέα είναι αυτή που είδαμε στην θεωρία. Ποιο συγκεκριμένα, δημιουργία
 του δυναμοσυνόλου των καταστάσεων του μη-ντετερμινιστικού αυτομάτου (ΜΠΑ), υπολογισμός μεταβάσεων και αφαίρεσης μη προσβάσιμων καταστάσεων για να φτάσουμε στο ντετερμινιστικό αυτόματο (ΝΠΑ).
 
-Τώρα θα δούμε τα σημαντικότερα κομμάτια κώδικα από κοντά με μικρές παραλείψεις (όπως κάποια σχόλια μέσα στον κώδικα) για καλύτερη αναγνωσιμότητα.
-Για περισσότερες λεπτομέρειες και σχόλια ανατρέξτε στο αρχείο του πηγαίο κώδικα.
+Παρακάτω θα δείτε τον κώδικα με μικρές παραλείψεις (όπως κάποια σχόλια μέσα στον κώδικα) για καλύτερη αναγνωσιμότητα.
+Για περισσότερες λεπτομέρειες και σχόλια ανατρέξτε στο αρχείο του πηγαίου κώδικα.
 
-## Αντικείμενα
+\newpage
 
-### State
+## Καταστάσεις
 
-Όπως φαίνεται και στον κώδικα μια κατάσταση αναπαριστάτε από μια συμβολοσειρά 
+Μια κατάσταση αναπαριστάτε από μια συμβολοσειρά, έτσι στον κώδικα η κλάση State δεν είναι
+τίποτε παραπάνω από μια κλάση str με δυο επιπλέον κατασκευαστές. 
+Επίσης έχει μια σταθερά για να αναπαριστά την null κατάσταση.
 
 ```python
 class State(str):
@@ -87,89 +112,276 @@ class State(str):
     """
 
     null = "∅"
-
-    @staticmethod
-    def from_number(n):
-        """Create a State from anything that can be converted to an integer.
-
-        Must be non-negative
-
-        Examples:
-        >>> State.fromNumber(5)
-        >>> 'q1'
-        >>> State.fromNumber('12')
-        >>> 'q12'
-        """
-        try:
-            if (num := int(n)) >= 0:
-                return f"q{num}"
-        except ValueError:
-            raise TypeError("Number given must be convertible to int.")
-
-    @staticmethod
-    def from_set(state_set):
-        """Create a state from a set of states.
-
-        Examples:
-        >>> State.from_set('q1','q2')
-        >>> 'q1q2'
-        >>> State.from_set('q0','q3','q5')
-        >>> 'q0q3q5'
-        """
-        return "".join(state_set)
 ```
 
-### FiniteStateAuto
-
-constructors + saving to file, mention dot + normalize_state_names
-
-
-## main ()
-
-Εδώ βλέπουμε υψηλού επιπέδου εικόνα του προγράμματος, πολύ απλά κατασκευάζει μερικά μη-ντετερμινιστικά αυτόματα
-από αρχεία, τα μετατρέπει σε ντετερμινιστικά και τα γράφει σε αρχεία. 
+Ο πρώτος κατασκευαστής δέχεται έναν αριθμό έτσι ώστε οι αριθμοί που διαβάζονται από το αρχείο
+να μετατρέπονται σε συμβολοσειρές τύπου 'qN' όπου Ν ένας αριθμός.
 
 ```python
-def main():
-    Nfa = FiniteStateAuto.from_file("./Nfa.txt")
-    Nfa.save_to_dot("Nfa.gv")
-
-    Dfa = translate_to_deterministic(Nfa)
-    Dfa.save_to_dot("Dfa.gv")
-    Dfa.save_to_file("Dfa.txt")
-
-    Nfa2 = FiniteStateAuto.from_file("./Nfa2.txt")
-    Nfa2.save_to_dot("Nfa2.gv")
-
-    Dfa2 = translate_to_deterministic(Nfa2)
-    Dfa2.save_to_dot("Dfa2.gv")
-    Dfa2.normalize_state_names()
-    Dfa2.save_to_file("Dfa2.txt")
-
-    Nfa3 = FiniteStateAuto.from_file("./Nfa3.txt")
-    Nfa2.save_to_dot("Nfa3.gv")
-
-    Dfa3 = translate_to_deterministic(Nfa3)
-    Dfa3.normalize_state_names()
-    Dfa3.save_to_dot("Dfa3.gv")
-    Dfa3.save_to_file("Dfa3.txt")
+@staticmethod
+def from_number(n):
+    """
+    Examples:
+    >>> State.fromNumber(5)
+    >>> 'q1'
+    >>> State.fromNumber('12')
+    >>> 'q12'
+    """
+    try:
+        if (num := int(n)) >= 0:
+            return f"q{num}"
+    except ValueError:
+        raise TypeError("Number given must be convertible to int.")
 ```
 
-## Ντετερμινισμός 
+Ο δεύτερος φτιάχνει μια κατάσταση από ένα σύνολο (στην πραγματικότητα ένα iterable) καταστάσεων. Έτσι μια
+λίστα καταστάσεων ['q1','q2','q3'] θα δημιουργήσει μια κατάσταση 'q1q2q3'. Είναι σημαντικό η είσοδος να είναι
+ταξινομημένη με κάποιον τρόπο (λεξικογραφικά σε αυτή την περίπτωση) ώστε η σειρά των καταστάσεων να μην επηρεάζει το όνομα της κατάστασης.
 
-Εδώ βλέπουμε την συνάρτηση που κάνει την μετατροπή από ΜΠΑ σε ΝΠΑ.
+```python
+@staticmethod
+def from_set(state_set):
+    """
+    Examples:
+    >>> State.from_set(['q1','q2'])
+    >>> 'q1q2'
+    >>> State.from_set(['q0','q3','q5'])
+    >>> 'q0q3q5'
+    """
+    return "".join(state_set)
+```
+
+\newpage
+
+## Αυτόματα
+
+```python
+class FiniteStateAuto:
+    """Represents a Finite State Automaton."""
+```
+
+Ένα αυτόματο αναπαριστάτε από το σύνολο των ιδιοτήτων που ορίσαμε ότι περιέχει το αρχείο εισόδου συν ένα σύνολο καταστάσεων. Δηλαδή μια αλφάβητο, μια αρχική κατάσταση, ένα σύνολο (λίστα) τελικών καταστάσεων, ένα σύνολο μεταβάσεων (λίστα) και ένα σύνολο καταστάσεων.
+
+Λόγο της ύπαρξης του συνόλου καταστάσεων, ο αριθμός των καταστάσεων μπορεί να υπολογίζεται δυναμικά από τον
+πληθάριθμο του συνόλου καταστάσεων του αυτόματου. Έτσι ο αριθμός των καταστάσεων που διαβάζεται από το αρχείο χρησιμοποιείτε μόνο στην αρχική δημιουργία του αντικειμένου. Αυτό βέβαια προϋποθέτει ότι τα ονόματα των καταστάσεων στο αρχείο είναι αύξουσα ακολουθία διαδοχικών αριθμών ξεκινώντας από το 0 όπως αναφέρετε στην \autonameref{section:specs}.
+
+### Κατασκευαστές
+
+Ο πραγματικός κατασκευαστής.
+
+```python
+def __init__(self, count, alphabet, start, end, transitions, states=None):
+    """Instantiate a new FiniteStateAuto.
+
+    If it's not given a set of states, it creates them from the
+    number of states given.
+    """
+    self.state_count = count
+    self.alphabet = alphabet
+    self.start_state = start
+    self.end_states = end
+    self.transitions = transitions
+    # if not given state names, create them from the state count
+    # assumes state names in transitions are increasing numbers
+    if states is None:
+        self.states = [State.from_number(state) for state in range(self.state_count)]
+    else:
+        self.states = states
+```
+
+\newpage
+
+Η συνάρτηση from_file() δημιουργεί ένα αυτόματο από ένα αρχείο εισόδου καλώντας τον πραγματικό κατασκευαστή με τις 
+κατάλληλες παραμέτρους.
+
+```python
+@classmethod
+def from_file(cls, filename):
+    """Create a FiniteStateAuto from a file."""
+    with open(filename) as file:
+        state_count = int(file.readline().strip())
+        alphabet = file.readline().strip().split(" ")
+        start_state = State.from_number(file.readline().strip())
+        end_states = [
+            State.from_number(end_state)
+            for end_state in file.readline().strip().split(" ")
+        ]
+
+        transitions = list()
+        for line in file:
+            transition = line.strip().split(" ")
+            transition[0] = State.from_number(transition[0])
+            transition[2] = State.from_number(transition[2])
+            transitions.append(transition)
+
+    return cls(state_count, alphabet, start_state, end_states, transitions)
+```
+
+Η συνάρτηση empty() κατασκευάζει ένα αυτόματο αρχικοποιημένο με άδειες δομές δεδομένων και μη έγκυρες τιμές.
+
+```python
+@classmethod
+def empty(cls):
+    """Return an empty FiniteStateAuto."""
+    return cls(0, [], -1, [], [], states=[])
+```
+
+\newpage
+
+### Βοηθητικές μέθοδοι
+\
+Η συνάρτηση state_count() δεν χρησιμοποιείται σαν συνάρτηση αλλά σαν ιδιότητα της κλάσης 
+δηλαδή δρα σαν μεταβλητή της κλάσης όταν ζητάμε την τιμή της αλλά δεν υποστηρίζει ανάθεση, δείτε τα παραδείγματα.
+
+```python
+@property
+def state_count(self):
+    """Calculate the state count dynamically.
+
+    Examples:
+    >>> Dfa.states
+    >>> {'q0' 'q1'}
+    >>> Dfa.state_count  # note no () at the end
+    >>> 2
+    """
+    return len(self.states)
+```
+
+Η συνάρτηση \_\_repr\_\_() επιστρέφει μία συμβολοσειρά που αναπαριστά το αυτόματο, χρησιμοποιήθηκε κατά την διάρκεια
+ανάπτυξης του προγράμματος.
+
+```python
+def __repr__(self):
+    """Return a pretty string representing the object."""
+    trans_str_complete = ""
+    for trans_str in [  # list comprehension magic
+        f"\t[{trans[0]}\t--{trans[1]}-->\t{trans[2]}],\n"
+        for trans in self.transitions
+    ]:
+        trans_str_complete += trans_str
+    return (
+        f"Number of states: {self.state_count}\n"
+        f"Start state: {self.start_state}\n"
+        f"End states: {self.end_states}\n"
+        f"Alphabet: {self.alphabet}\n"
+        f"Transitions: [\n{trans_str_complete}]\n"
+        f"States: {self.states}\n"
+    )
+```
+
+\label{section:norm}
+
+Η συνάρτηση normalize_state_names() μετονομάζει όλα τα ονόματα ενός αυτομάτου από 'q0' έως 'qT' όπου T το πλήθος των καταστάσεων πλυν 1. Η χρήση της είναι στην μετονομασία καταστάσεων όπως η null και καταστάσεις φτιαγμένες από σύνολο καταστάσεων όπως η 'q0q2q3' σε καταστάσεις με ονόματα τύπου 'qN' όπου Ν ένας φυσικός αριθμός ώστε το αρχείο εξόδου να μπορεί εύκολα να διαβαστεί.
+
+```python
+def normalize_state_names(self):
+    """Return a FiniteStateAuto with normalized state names.
+
+    Normalized in this context means that states named after
+    state sets and the null state are renamed.
+
+    Example:
+    >>> Dfa.states
+    >>> {'q0', 'q1', 'q0q1', '∅'}
+    >>> Dfa.normalize_state_names()
+    >>> Dfa.states
+    >>> {'q0', 'q1', 'q2', 'q3'}
+
+    """
+    name_map = {}  # maps old state names to new state names
+    for state, new_name in zip(self.states, range(len(self.states))):
+        name_map[state] = State.from_number(new_name)
+
+    # rename states
+    self.states = set([name_map[state] for state in self.states])
+    # rename transitions
+    self.transitions = [[name_map[trans[0]], trans[1], name_map[trans[2]]] for trans in self.transitions]
+    # rename end states
+    self.end_states = [name_map[end_state] for end_state in self.end_states]
+    # rename start state
+    self.start_state = name_map[self.start_state]
+```
+
+### Δημιουργία αρχείων
+\
+Η συνάρτηση save_to_file() φτιάχνει ένα αρχείο που αναπαριστά το αυτόματο.
+
+```python
+def save_to_file(self, filename):
+    """Save the FiniteStateAuto to a file.
+
+    Although all 'q's in state names are removed
+    and the null state is given a numerical name,
+    it's a better idea to just normalize_state_names()
+    before you save a FiniteStateAuto.
+    """
+    # with sys.stdout as file: used to debug
+    null_name = f"{len(self.states) + 1}"  # number to write instead of '∅'
+    with open(filename, "w") as file:
+        file.write(f"{self.state_count}\n"
+                    f"{' '.join(self.alphabet)}\n"
+                    f"{self.start_state.replace('q', '').replace('∅', null_name)}\n"
+                    f"{' '.join(self.end_states).replace('q', '').replace('∅', null_name)}\n")
+
+        for transition in self.transitions:
+            file.write(f"{' '.join(transition).replace('q', '').replace('∅', null_name)}\n")
+```
+
+Η συνάρτηση save_to_dot(filename) φτιάχνει ένα αρχείο που αναπαριστά το αυτόματο στην γλώσσα dot που
+μπορεί να χρησιμοποιηθεί για την δημιουργία εικόνων. Χρησιμοποιήθηκε για τις εικόνες που 
+θα δείτε στην \autonameref{section:results}.
+
+Έχει ένα μικρό μειονέκτημα στο ότι δεν ομαδοποιεί μεταβάσεις από μια κατάσταση σε μια άλλη που έχουν διαφορετικό
+σύμβολο, αλλά χρησιμοποιεί ένα βελάκι για την καθεμία όπως θα δείτε στην εικόνα στο \autonameref{pic:Nfa}. 
+Στο αρχείο Dfa4.pdf θα δείτε πολύ καθαρά αυτό το μειονέκτημα.
+
+```python
+def save_to_dot(self, filename):
+    """Save the FiniteStateAuto to a GraphViz file.
+
+    Such a file can then be used to render the FiniteStateAuto
+    into a png, pdf, etc.. like so
+
+    $ dot <filename> -T<filetype> -o <output_filename>
+    """
+    with open(filename, "w") as file:
+        file.write(
+            "digraph G {\n"
+            "rankdir=\"LR\"\n"
+            "\tnode [shape=circle style=filled fillcolor=yellow fixedsize=true width=1.1 height=1.1]\n"
+            "\tstart [shape=plaintext, fillcolor=none]\n"
+        )
+        if "∅" in self.states:
+            file.write("\t∅ [fillcolor=darksalmon fontsize=20]\n")
+        for end_state in self.end_states:
+            file.write(f"\t{end_state} [shape=doublecircle]\n")
+
+        file.write(f"\tstart -> {self.start_state};\n")
+        for trans in self.transitions:
+            file.write(f'\t{trans[0]} -> {trans[2]} [label="{trans[1]}"];\n')
+
+        file.write("}")
+```
+
+
+## Ντετερμινισμός
+
+Η επόμενη συνάρτηση κάνει την μετατροπή από ΜΠΑ σε ΝΠΑ.
+
+```python
+def translate_to_deterministic(Nfa):
+```
 
 Αρχικά δημιουργεί ένα άδειο αντικείμενο αυτομάτου και αντιγράφει τις ιδιότητες που θα μείνουν ίδιες,
 την αλφάβητο και την αρχική κατάσταση του αυτομάτου.
 
 ```python
-def translate_to_deterministic(Nfa):
-    # Deterministic finite (state) automation
-    Dfa = FiniteStateAuto.empty()
+# Deterministic finite (state) automation
+Dfa = FiniteStateAuto.empty()
 
-    # copy attributes that stay the same
-    Dfa.start_state = Nfa.start_state
-    Dfa.alphabet = Nfa.alphabet
+# copy attributes that stay the same
+Dfa.start_state = Nfa.start_state
+Dfa.alphabet = Nfa.alphabet
 ```
 
 Για κάθε κατάσταση στο δυναμοσύνολο των καταστάσεων του ΜΠΑ δημιουργεί μια κατάσταση
@@ -220,8 +432,8 @@ for state, symbol in product(Dfa.states, Dfa.alphabet):
 ```
 
 Μετά με την χρήση της αναδρομικής συνάρτησης walk() καταγράφει τις προσβάσιμες καταστάσεις σε ένα
-σύνολο walked. Χρησιμοποιώντας το σύνολο αυτό αφαιρεί κάθε αναφορά σε μη προσβάσιμη κατάσταση από τις
-ιδιότητες του ΝΠΑ. Μετράει των αριθμό των καταστάσεων του τελικού ΝΠΑ και το επιστρέφει.
+σύνολο walked. Με βάση το σύνολο αυτό αφαιρεί κάθε αναφορά σε μη προσβάσιμη κατάσταση από τις
+ιδιότητες του ΝΠΑ και το επιστρέφει.
 
 ```python
 walked = set()
@@ -244,9 +456,6 @@ walk(Dfa.start_state)  # walk from the start
 # only keep reachable states
 Dfa.states = walked
 
-# count em
-Dfa.state_count = len(Dfa.states)
-
 # remove transitions that reference unreachable states
 for transition in list(Dfa.transitions):  # explicitly make a copy to iterate over
     if transition[0] not in Dfa.states or transition[2] not in Dfa.states:
@@ -260,13 +469,135 @@ for end_state in list(Dfa.end_states):
 return Dfa
 ```
 
+## main ()
+
+Εδώ θα δείτε μια υψηλού επιπέδου εικόνα του προγράμματος. Πολύ απλά κατασκευάζει μερικά μη-ντετερμινιστικά αυτόματα
+από αρχεία, τα μετατρέπει σε ντετερμινιστικά και τα γράφει σε αρχεία. 
+
+Θα δείτε επίσης ότι η συνάρτηση normalize_state_names() χρησιμοποιείτε μερικές φορές πριν και άλλες φορές μετά την αποθήκευση σε αρχείο εξόδου.
+Αυτό γίνεται για να αναδειχτεί το αποτέλεσμα που έχει η χρήση της.
+Περισσότερες λεπτομέρειες για την συνάρτηση normalize_state_names() θα βρείτε στην \autonameref{section:specs} όπως
+και τα αποτελέσματα της χρήσης της στα αρχεία dot στην \autonameref{section:results}.
+
+```python
+def main():
+    Nfa = FiniteStateAuto.from_file("./Nfa.txt")
+    Nfa.save_to_dot("Nfa.gv")
+
+    Dfa = translate_to_deterministic(Nfa)
+    Dfa.save_to_dot("Dfa.gv")
+    Dfa.save_to_file("Dfa.txt")
+
+    Nfa2 = FiniteStateAuto.from_file("./Nfa2.txt")
+    Nfa2.save_to_dot("Nfa2.gv")
+
+    Dfa2 = translate_to_deterministic(Nfa2)
+    Dfa2.save_to_dot("Dfa2.gv")
+    Dfa2.normalize_state_names()
+    Dfa2.save_to_file("Dfa2.txt")
+
+    Nfa3 = FiniteStateAuto.from_file("./Nfa3.txt")
+    Nfa3.save_to_dot("Nfa3.gv")
+
+    Dfa3 = translate_to_deterministic(Nfa3)
+    Dfa3.normalize_state_names()
+    Dfa3.save_to_dot("Dfa3.gv")
+    Dfa3.save_to_file("Dfa3.txt")
+
+    # dear god...
+    Nfa4 = FiniteStateAuto.from_file("./Nfa4.txt")
+    Nfa4.save_to_dot("Nfa4.gv")
+
+    Dfa4 = translate_to_deterministic(Nfa4)
+    Dfa4.save_to_dot("Dfa4.gv")
+    Dfa4.normalize_state_names()  # export after normalizing
+    Dfa4.save_to_file("Dfa4.txt")
+```
+
+\newpage
+
 # Αποτελέσματα
+
+\label{section:results}
+
+Αρχικά θα δείτε την μετατροπή του αυτομάτου της εκφώνησης.
 
 \begin{figure}[H]
     \begin{center}
-        \includegraphics[width=1\linewidth]{"./Nfa.pdf"}
-        \caption{Μη ντετερμινιστικό αυτόματο εκφώνησης}
+        \begin{subfigure}[b]{\textwidth}
+            \includegraphics[width=\textwidth]{"./Nfa.pdf"}
+            \caption{Μη ντετερμινιστικό αυτόματο εκφώνησης}
+        \end{subfigure}
+        \begin{subfigure}[b]{\textwidth}
+            \includegraphics[width=\textwidth]{"./Dfa.pdf"}
+            \caption{Αντίστοιχο ντετερμινιστικό αυτόματο}
+        \end{subfigure}
     \end{center}
+    \caption{Μετατροπή αυτόματου εκφώνησης}
+    \label{pic:Nfa}
 \end{figure}
 
+\newpage
 
+Παρακάτω θα δείτε την μετατροπή του τρίτου μη-ντετερμινιστικού αυτόματου που είδαμε στην διάλεξη 4.5 ^[Χρόνος: 16:30 https://youtu.be/juaVVTI-QzY?t=990]. Προσέξτε ότι οι καταστάσεις δεν έχουν μετονομαστεί και έχουμε καταστάσεις όπως η null και η 'q0q2q3'. Έτσι το αντίστοιχο αρχείο εξόδου περιέχει εγγραφές μεταβάσεων σαν 023 0 123 που δεν είναι ιδανικό.
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{subfigure}[b]{\textwidth}
+            \includegraphics[width=\textwidth]{"./Nfa2.pdf"}
+            \caption{Μη ντετερμινιστικό}
+        \end{subfigure}
+        \begin{subfigure}[b]{\textwidth}
+            \includegraphics[width=\textwidth]{"./Dfa2.pdf"}
+            \caption{Ντετερμινιστικό}
+        \end{subfigure}
+    \end{center}
+    \caption{Μετατροπή αυτόματου Nfa2.txt}
+\end{figure}
+
+\newpage
+
+Τέλος θα δείτε την μετατροπή του δεύτερου μη-ντετερμινιστικού αυτόματου που είδαμε στην διάλεξη 4.5 ^[Χρόνος: 3:30 https://youtu.be/juaVVTI-QzY?t=210]. Σε αντίθεση με το προηγούμενο προσέξτε ότι με την χρήση της normalize_state_names() έχουν μετονομαστεί οι καταστάσεις και το αρχείο εξόδου περιέχει εγγραφές που μοιάζουν με αυτές του αρχείου εισόδου.
+
+<!-- TODO: rethink this -->
+
+\begin{figure}[H]
+    \begin{center}
+        \begin{subfigure}[b]{\textwidth}
+            \includegraphics[width=\textwidth]{"./Nfa3.pdf"}
+            \caption{Μη ντετερμινιστικό}
+        \end{subfigure}
+        \begin{subfigure}[b]{\textwidth}
+            \includegraphics[width=\textwidth]{"./Dfa3.pdf"}
+            \caption{Ντετερμινιστικό}
+        \end{subfigure}
+    \end{center}
+    \caption{Μετατροπή αυτόματου Nfa3.txt}
+\end{figure}
+
+\newpage
+
+# Περιορισμοί, Παραδοχές και Προτερήματα
+
+\label{section:specs}
+
+Τα ονόματα των καταστάσεων πρέπει να είναι διαδοχικοί φυσικοί αριθμοί ξεκινώντας από το 0.
+
+Το αρχείο εξόδου μπορεί να περιέχει εγγραφές με ονόματα καταστάσεων που μπορούν να ερμηνευτούν λάθος εάν έχουμε περισσότερες από 10 καταστάσεις. Για παράδειγμα η κατάσταση 'q1q2' και η 'q12', και οι δυο θα γραφτούν ως 12.
+
+Για αυτό το λόγο υπάρχει η συνάρτηση normalize_state_names() η οποίας εξαλείφει τέτοια ονόματα καταστάσεων μετονομάζοντας κάθε κατάσταση όπως αναφέρθηκε στην \autonameref{section:norm}. Η χρήση της είναι προαιρετική για
+πλήθη καταστάσεων μικρότερα από 10.
+
+Τελικά το πρόγραμμα μπορεί να χειριστεί αρχεία εισόδου με
+αυτόματα με $m > 10$ αλφαριθμητικά σύμβολα (χωρίς κενά) της αλφάβητου και αριθμό καταστάσεων $n > 10$.
+Αυτό με την χρήση της normalize_state_names() καταστάσεις περισσότερες από 10 πριν την εγγραφή σε αρχείο εξόδου.
+
+Απόδειξη (σε πολλά εισαγωγικά) για τον επιτυχές (με ακόμα περισσότερα εισαγωγικά) χειρισμό για $n > 10$ και $m > 10$ μπορείτε να βρείτε στα αρχεία παρακάτω αρχεία.
+Τα .pdf παρέχονται ώστε να μην χρειαστεί η χρήση του dot για την δημιουργία τους.
+
+* Nfa4.txt αρχείο εισόδου
+* Dfa4.txt αρχείο εξόδου
+* Nfa4.pdf dot έξοδος μη-ντετερμινιστικού
+* Dfa4.pdf dot έξοδος ντετερμινιστικού (είναι λίγο χαοτικό)
+
+Τα οποία δεν εμπεριέχονται στο παρόν έγγραφο λόγο της μεγάλης έκτασης των αυτομάτων που παράγονται.

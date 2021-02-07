@@ -1,4 +1,5 @@
 *.pdf
+*Dfa*
 *.gv
 *.png
 *.tex

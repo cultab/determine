@@ -24,12 +24,21 @@ def main():
     Dfa2.save_to_file("Dfa2.txt")
 
     Nfa3 = FiniteStateAuto.from_file("./Nfa3.txt")
-    Nfa2.save_to_dot("Nfa3.gv")
+    Nfa3.save_to_dot("Nfa3.gv")
 
     Dfa3 = translate_to_deterministic(Nfa3)
     Dfa3.normalize_state_names()  # export after normalizing
     Dfa3.save_to_dot("Dfa3.gv")
     Dfa3.save_to_file("Dfa3.txt")
+
+    # dear god...
+    Nfa4 = FiniteStateAuto.from_file("./Nfa4.txt")
+    Nfa4.save_to_dot("Nfa4.gv")
+
+    Dfa4 = translate_to_deterministic(Nfa4)
+    Dfa4.save_to_dot("Dfa4.gv")
+    Dfa4.normalize_state_names()  # export after normalizing
+    Dfa4.save_to_file("Dfa4.txt")
 
 
 class State(str):
@@ -64,9 +73,9 @@ class State(str):
         """Create a state from a set of states.
 
         Examples:
-        >>> State.from_set('q1','q2')
+        >>> State.from_set(['q1','q2'])
         >>> 'q1q2'
-        >>> State.from_set('q0','q3','q5')
+        >>> State.from_set(['q0','q3','q5'])
         >>> 'q0q3q5'
         """
         return "".join(state_set)
@@ -79,9 +88,8 @@ class FiniteStateAuto:
         """Instantiate a new FiniteStateAuto.
 
         If it's not given a set of states, it creates them from the
-        number of states given.
+        state count given.
         """
-        self.state_count = count
         self.alphabet = alphabet
         self.start_state = start
         self.end_states = end
@@ -89,9 +97,21 @@ class FiniteStateAuto:
         # if not given state names, create them from the state count
         # assumes state names in transitions are increasing numbers
         if states is None:
-            self.states = [State.from_number(state) for state in range(self.state_count)]
+            self.states = [State.from_number(state) for state in range(count)]
         else:
             self.states = states
+
+    @property
+    def state_count(self):
+        """Calculate the state count dynamically.
+
+        Examples:
+        >>> Dfa.states
+        >>> {'q0' 'q1'}
+        >>> Dfa.state_count  # note no () at the end
+        >>> 2
+        """
+        return len(self.states)
 
     @classmethod
     def from_file(cls, filename):
@@ -197,7 +217,7 @@ class FiniteStateAuto:
                 "digraph G {\n"
                 "rankdir=\"LR\"\n"
                 "\tnode [shape=circle style=filled fillcolor=yellow fixedsize=true width=1.1 height=1.1]\n"
-                "\tstart [fillcolor=orange]\n"
+                "\tstart [shape=plaintext, fillcolor=none]\n"
             )
             if "∅" in self.states:
                 file.write("\t∅ [fillcolor=darksalmon fontsize=20]\n")
@@ -272,9 +292,6 @@ def translate_to_deterministic(Nfa):
 
     # only keep reachable states
     Dfa.states = walked
-
-    # count em
-    Dfa.state_count = len(Dfa.states)
 
     # remove transitions that reference unreachable states
     for transition in list(Dfa.transitions):  # explicitly make a copy to iterate over
