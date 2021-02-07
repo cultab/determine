@@ -21,13 +21,13 @@ def main():
     Dfa2 = translate_to_deterministic(Nfa2)
     Dfa2.save_to_dot("Dfa2.gv")  # export with names as is
     Dfa2.normalize_state_names()
-    Dfa2.save_to_file("Dfa2.txt")
+    Dfa2.save_to_file("Dfa2.txt")  # save after normalizing
 
     Nfa3 = FiniteStateAuto.from_file("./Nfa3.txt")
     Nfa3.save_to_dot("Nfa3.gv")
 
     Dfa3 = translate_to_deterministic(Nfa3)
-    Dfa3.normalize_state_names()  # export after normalizing
+    Dfa3.normalize_state_names()  # save and export after normalizing
     Dfa3.save_to_dot("Dfa3.gv")
     Dfa3.save_to_file("Dfa3.txt")
 
@@ -37,7 +37,7 @@ def main():
 
     Dfa4 = translate_to_deterministic(Nfa4)
     Dfa4.save_to_dot("Dfa4.gv")
-    Dfa4.normalize_state_names()  # export after normalizing
+    Dfa4.normalize_state_names()  # save after normalizing
     Dfa4.save_to_file("Dfa4.txt")
 
 
